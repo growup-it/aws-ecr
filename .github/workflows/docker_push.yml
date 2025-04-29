@@ -1,0 +1,135 @@
+# To push a Docker image to Docker Hub using GitHub Actions, you'll need to create a
+# GitHub workflow YAML file. The workflow will include steps to build the Docker image
+# and push it to Docker Hub. Below is a sample workflow that you can use or modify according to your needs:
+
+# Create GitHub Secrets: Before setting up the workflow, you need to store your Docker Hub
+# credentials securely in GitHub. Go to your GitHub repository,
+# navigate to Settings -> Secrets and variables -> Actions, and add the following secrets:
+
+# DOCKER_USERNAME: Your Docker Hub username.
+# DOCKER_PASSWORD: Your Docker Hub password or Personal Access Token (recommended for better security).
+# Create a Workflow File: Create a directory named .github/workflows in the root of your
+# GitHub repository if it does not already exist, then create a YAML file, for example,
+# docker-image.yml inside this directory.
+
+# Here is a sample workflow YAML to get you started:
+
+    name: Build and Push Docker Image
+
+    on:
+      push:
+        branches:
+          - main  # Change this to your default branch if it's not 'main'
+
+    # on:
+    #   pull_request:
+    #     branches:
+    #       - main
+    #       types: [closed]
+
+    env:
+      app_name: nginx
+      AWS_REGION: "us-east-1"
+
+
+    permissions:
+      id-token: write   # Required for OIDC JWT retrieval
+      contents: read     # Required for repository checkout
+
+
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - id: get-tag
+          name: Generate release tag
+          run: |
+           RELEASE_TAG=$(date --utc +%Y-%m-%dT%H%M)
+           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
+
+        - name: Configure AWS Credentials via OIDC
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+             role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
+             audience: sts.amazonaws.com
+             aws-region: ${{ env.AWS_REGION }}
+
+
+        - name: Log in ecr
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v2
+
+        - name: Build Docker image
+          env:
+            REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+
+          run: |-
+             docker build -t 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{env.app_name}}:${{ steps.get-tag.outputs.tag }} .
+
+
+
+
+        - name: Push Docker image
+          env:
+            REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          run: |-
+            docker push 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{env.app_name}}:${{ steps.get-tag.outputs.tag }}
+
+
+
+
+
+            # - name: Build and push Docker image
+        #   uses: docker/build-push-action@v4
+        #   with:
+        #     context: .
+        #     push: true
+        #     tags: yourdockerhubusername/your-repo-name:latest
+
+        # # Optionally you can add more tags
+        # # #- tags: yourdockerhubusername/your-repo-name:${{ github.sha }}
+
+
+        # name: Build and Push Docker Image
+
+        # on:
+        #   push:
+        #     branches:
+        #       - main  # Change this to your default branch if it's not 'main'
+
+        # env:
+        #   app_name: my-nginx
+
+        # jobs:
+        #   build:
+        #     runs-on: ubuntu-latest
+
+        #     steps:
+        #     - name: Checkout code
+        #       uses: actions/checkout@v3
+
+        #     - id: get-tag
+        #       name: Generate release tag
+        #       run: |
+        #        RELEASE_TAG=$(date --utc +%Y-%m-%dT%H%M)
+        #        echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
+        #     - name: Build Docker image
+        #       run: |-
+        #         docker build -t kiran11113/${{env.app_name}}:${{ steps.get-tag.outputs.tag }} .
+
+        #     - name: Log in to Docker Hub
+        #       uses: docker/login-action@v2
+        #       with:
+        #         username: ${{ secrets.DOCKER_USERNAME }}
+        #         password: ${{ secrets.DOCKER_PASSWORD }}
+
+        #     - name: Push Docker image
+        #       run: |-
+        #         docker push kiran11113/${{env.app_name}}:${{ steps.get-tag.outputs.tag }}
+
