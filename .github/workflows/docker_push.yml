@@ -76,7 +76,7 @@ jobs:
           docker push ${{env.ECR_REPOSITORY}}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
 
       - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region ${ env.AWS_REGION }
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
 
       - name: Check kubectl context
         run: kubectl config current-context
