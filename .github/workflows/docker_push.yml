@@ -82,7 +82,7 @@ jobs:
         run: kubectl config current-context
 
       - name: Test EKS Access
-        run: kubectl get nodes --v=8
+        run: kubectl get nodes
 
       # - name: Deploy to EKS
       #   env:
