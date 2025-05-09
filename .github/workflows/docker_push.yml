@@ -32,6 +32,7 @@ env:
   app_name: nginx
   AWS_REGION: "us-east-1"
   EKS_CLUSTER_NAME: Kubernetes-demo  # Change this to your EKS cluster name
+  ECR_REPOSITORY: 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{ env.app_name }}
 
 permissions:
   id-token: write   # Required for OIDC JWT retrieval
@@ -66,16 +67,16 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -t 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }} .
+          docker build -t ${{env.ECR_REPOSITORY}}:${{ steps.get-tag.outputs.tag }} .
 
       - name: Push Docker image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker push 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
+          docker push ${{env.ECR_REPOSITORY}}:${{ steps.get-tag.outputs.tag }}
 
       - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION --role-arn arn:aws:iam::127214183072:role/aws-git-oidc
 
       - name: Deploy to EKS
         env:
