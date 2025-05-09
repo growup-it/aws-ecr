@@ -14,85 +14,81 @@
 
 # Here is a sample workflow YAML to get you started:
 
-    name: Build and Push Docker Image
+name: Build and Push Docker Image
 
-    on:
-      push:
-        branches:
-          - main  # Change this to your default branch if it's not 'main'
+on:
+  push:
+    branches:
+      - main  # Change this to your default branch if it's not 'main'
 
-    # on:
-    #   pull_request:
-    #     branches:
-    #       - main
-    #       types: [closed]
+# Uncomment to enable pull request builds
+# on:
+#   pull_request:
+#     branches:
+#       - main
+#       types: [closed]
 
-    env:
-      app_name: nginx
-      AWS_REGION: "us-east-1"
-      EKS_CLUSTER_NAME: Kubernetes-demo # Change this to your EKS cluster name
+env:
+  app_name: nginx
+  AWS_REGION: "us-east-1"
+  EKS_CLUSTER_NAME: Kubernetes-demo  # Change this to your EKS cluster name
 
+permissions:
+  id-token: write   # Required for OIDC JWT retrieval
+  contents: read     # Required for repository checkout
 
-    permissions:
-      id-token: write   # Required for OIDC JWT retrieval
-      contents: read     # Required for repository checkout
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    jobs:
-      build:
-        runs-on: ubuntu-latest
+      - id: get-tag
+        name: Generate release tag
+        run: |
+          RELEASE_TAG=$(date --utc +%Y-%m-%dT%H%M)
+          echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
 
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
+          audience: sts.amazonaws.com
+          aws-region: ${{ env.AWS_REGION }}
 
-        - id: get-tag
-          name: Generate release tag
-          run: |
-           RELEASE_TAG=$(date --utc +%Y-%m-%dT%H%M)
-           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+      - name: Log in to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Build Docker image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -t 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }} .
 
-        - name: Configure AWS Credentials via OIDC
-          uses: aws-actions/configure-aws-credentials@v1
-          with:
-             role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
-             audience: sts.amazonaws.com
-             aws-region: ${{ env.AWS_REGION }}
+      - name: Push Docker image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker push 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
 
+      - name: Update kube config
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
 
-        - name: Log in ecr
-          id: login-ecr
-          uses: aws-actions/amazon-ecr-login@v2
-
-        - name: Build Docker image
-          env:
-            REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-
-          run: |-
-             docker build -t 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{env.app_name}}:${{ steps.get-tag.outputs.tag }} .
-
-        - name: Push Docker image
-          env:
-            REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          run: |-
-            docker push 127214183072.dkr.ecr.us-east-1.amazonaws.com/${{env.app_name}}:${{ steps.get-tag.outputs.tag }}
-
-        - name: Update kube config
-          run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
-
-        - name: Deploy to EKS
-          env:
-              ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}/${{env.app_name}}
-              IMAGE_TAG: ${{ steps.get-tag.outputs.tag }}
-            run: |
-              cd kubernetes
-              pwd
-              sleep 20
-              sed -i.bak "s|DOCKER_IMAGE|$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" deployment.yaml
-              cat deployment.yaml
-              sleep 20
-              kubectl apply -f . --validate=false
+      - name: Deploy to EKS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}/${{ env.app_name }}
+          IMAGE_TAG: ${{ steps.get-tag.outputs.tag }}
+        run: |
+          cd kubernetes
+          pwd
+          sleep 20
+          sed -i.bak "s|DOCKER_IMAGE|$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" deployment.yaml
+          cat deployment.yaml
+          sleep 20
+          kubectl apply -f . --validate=false
 
 
 
