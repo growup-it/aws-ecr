@@ -1,0 +1,14 @@
+*.terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraformrc
+.terraform/
+.terraform-version
+.terraform.tfstate
+.terraform.tfstate.backup
+.terraform.tfstate.*
+.terraform.lock.hcl
+.terraform.lock
+*.hcl
+*kubeconfig*

@@ -7,10 +7,10 @@ on:
       - main
 
 env:
-  app_name: nginx
-  AWS_REGION: "us-west-2"
-  EKS_CLUSTER_NAME: Kubernetes-demo  # Change this to your EKS cluster name
-  ECR_REPOSITORY: 127214183072.dkr.ecr.us-west-2.amazonaws.com
+  app_name: my-app-repository
+  AWS_REGION: "ap-south-1"
+  EKS_CLUSTER_NAME: learnk8s  # Change this to your EKS cluster name
+  ECR_REPOSITORY: 127214183072.dkr.ecr.ap-south-1.amazonaws.com
 
 jobs:
   build:
