@@ -25,7 +25,7 @@ env:
   app_name: nginx
   AWS_REGION: "us-west-2"
   EKS_CLUSTER_NAME: scrumptious-disco-dolphin  # Change this to your EKS cluster name
-  ECR_REPOSITORY: 127214183072.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: 127214183072.dkr.ecr.us-west-2.amazonaws.com
 
 jobs:
   build:
