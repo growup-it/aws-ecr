@@ -19,24 +19,13 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - main  # Change this to your default branch if it's not 'main'
+      - main
 
-# Uncomment to enable pull request builds
-# on:
-#   pull_request:
-#     branches:
-#       - main
-#       types: [closed]
-
-env:
+      env:
   app_name: nginx
   AWS_REGION: "us-west-2"
   EKS_CLUSTER_NAME: scrumptious-disco-dolphin  # Change this to your EKS cluster name
   ECR_REPOSITORY: 127214183072.dkr.ecr.us-east-1.amazonaws.com
-
-permissions:
-  id-token: write   # Required for OIDC JWT retrieval
-  contents: read     # Required for repository checkout
 
 jobs:
   build:
@@ -44,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: get-tag
         name: Generate release tag
@@ -52,12 +41,12 @@ jobs:
           RELEASE_TAG=$(date --utc +%Y-%m-%dT%H%M)
           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Configure AWS Credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
-          audience: sts.amazonaws.com
-          aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to ECR
         id: login-ecr
