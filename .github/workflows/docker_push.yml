@@ -21,7 +21,7 @@ on:
     branches:
       - main
 
-      env:
+env:
   app_name: nginx
   AWS_REGION: "us-west-2"
   EKS_CLUSTER_NAME: scrumptious-disco-dolphin  # Change this to your EKS cluster name
