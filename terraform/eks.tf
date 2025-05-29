@@ -47,6 +47,7 @@ resource "local_file" "kubeconfig" {
   filename = "kubeconfig_${local.cluster_name}"
 }
 
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.21.0"
