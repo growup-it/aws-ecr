@@ -49,15 +49,6 @@ jobs:
         run: |
           docker push ${{ env.ECR_REPOSITORY }}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
 
-      - name: Create Access Entry for GitHub OIDC Role
-        run: |
-          aws eks create-access-entry \
-            --cluster-name ${{ env.EKS_CLUSTER_NAME }} \
-            --principal-arn arn:aws:iam::087843402575:root \
-            --kubernetes-groups github-runners \
-            --type STANDARD \
-            --username github-actions-oidc
-
       - name: Associate Access Policy
         run: |
           aws eks associate-access-policy \
