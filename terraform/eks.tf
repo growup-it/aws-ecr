@@ -88,8 +88,16 @@ module "eks" {
   cluster_name    = local.cluster_name
   cluster_version = "1.32"
   subnet_ids      = module.vpc.public_subnets
+  enable_cluster_creator_admin_permissions = true
+
+  cluster_compute_config = {
+    enabled    = true
+    node_pools = ["general-purpose"]
+  }
 
   vpc_id = module.vpc.vpc_id
+
+
 
 
   cluster_endpoint_public_access  = true
