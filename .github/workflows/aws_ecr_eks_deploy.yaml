@@ -4,7 +4,7 @@ name: EKS ECS build and deploy
 on:
   push:
     branches:
-      - main
+      - main23
 
 env:
   app_name: my-app-repository
@@ -27,7 +27,7 @@ jobs:
           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        uses: aws-actions/configure-aws-credentials@v0
         with:
             aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -41,23 +41,40 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -t ${{env.ECR_REPOSITORY}}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }} .
+          docker build -t ${{ env.ECR_REPOSITORY }}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }} .
 
       - name: Push Docker image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker push ${{env.ECR_REPOSITORY}}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
+          docker push ${{ env.ECR_REPOSITORY }}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
+
+      - name: Create Access Entry for GitHub OIDC Role
+        run: |
+          aws eks create-access-entry \
+            --cluster-name ${{ env.EKS_CLUSTER_NAME }} \
+            --principal-arn <your-role-arn-here> \
+            --kubernetes-groups github-runners \
+            --type STANDARD \
+            --username github-actions-oidc
+
+      - name: Associate Access Policy
+        run: |
+          aws eks associate-access-policy \
+            --cluster-name ${{ env.EKS_CLUSTER_NAME }} \
+            --principal-arn <your-role-arn-here> \
+            --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy \
+            --access-scope type=cluster
 
       - name: Update kube config
-        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
 
       - name: Test EKS Access
         run: kubectl get nodes
 
       - name: Deploy to EKS
         env:
-          ECR_REGISTRY: ${{env.ECR_REPOSITORY}}/${{ env.app_name }}
+          ECR_REGISTRY: ${{ env.ECR_REPOSITORY }}/${{ env.app_name }}
           IMAGE_TAG: ${{ steps.get-tag.outputs.tag }}
         run: |
           cd kubernetes
@@ -67,3 +84,76 @@ jobs:
           cat deployment.yaml
           sleep 20
           kubectl apply -f . --validate=false
+
+
+
+
+# name: EKS ECS build and deploy
+# # This workflow will build a Docker image, push it to ECR, and deploy it to EKS
+
+# on:
+#   push:
+#     branches:
+#       - main23
+
+# env:
+#   app_name: my-app-repository
+#   AWS_REGION: "ap-south-1"
+#   EKS_CLUSTER_NAME: learnk8s  # Change this to your EKS cluster name
+#   ECR_REPOSITORY: 127214183072.dkr.ecr.ap-south-1.amazonaws.com
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - id: get-tag
+#         name: Generate release tag
+#         run: |
+#           RELEASE_TAG=$(date --utc +%Y-%m-%dT%H%M)
+#           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+#         with:
+#             aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#             aws-region: ${{ env.AWS_REGION }}
+
+#       - name: Log in to ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v1
+
+#       - name: Build Docker image
+#         env:
+#           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#         run: |
+#           docker build -t ${{env.ECR_REPOSITORY}}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }} .
+
+#       - name: Push Docker image
+#         env:
+#           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#         run: |
+#           docker push ${{env.ECR_REPOSITORY}}/${{ env.app_name }}:${{ steps.get-tag.outputs.tag }}
+
+#       - name: Update kube config
+#         run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+
+#       - name: Test EKS Access
+#         run: kubectl get nodes
+
+#       - name: Deploy to EKS
+#         env:
+#           ECR_REGISTRY: ${{env.ECR_REPOSITORY}}/${{ env.app_name }}
+#           IMAGE_TAG: ${{ steps.get-tag.outputs.tag }}
+#         run: |
+#           cd kubernetes
+#           pwd
+#           sleep 20
+#           sed -i.bak "s|DOCKER_IMAGE|$ECR_REGISTRY:$IMAGE_TAG|g" deployment.yaml
+#           cat deployment.yaml
+#           sleep 20
+#           kubectl apply -f . --validate=false
