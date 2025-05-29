@@ -12,6 +12,16 @@ provider "aws" {
   region = "ap-south-1"
 }
 
+terraform {
+  backend "s3" {
+    bucket         = "terraform-state-bucket-4152"
+    key            = "terraform/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "terraform-locks"  # if you created this for locking
+    encrypt        = true
+  }
+}
+
 data "aws_availability_zones" "available" {}
 
 data "aws_eks_cluster" "cluster" {
