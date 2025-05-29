@@ -6,6 +6,10 @@
 
 3. Check cluster info : eksctl get cluster --region us-east-1
 
+  cluster_name = "learnk8s"
+  cluster_name = "learnk8s"
+aws eks update-kubeconfig --name learnk8s --region ap-south-1
+
 
 eksctl create cluster \
   --name my-cluster \
