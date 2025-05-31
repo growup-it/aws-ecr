@@ -83,7 +83,7 @@ jobs:
           sed -i.bak "s|DOCKER_IMAGE|$ECR_REGISTRY:$IMAGE_TAG|g" deployment.yaml
           cat deployment.yaml
           sleep 20
-          kubectl apply -f . --validate=false
+          kubectl destroy -f . --validate=false
 
 
 
