@@ -48,7 +48,7 @@ module "eks" {
   cluster_name    = local.cluster_name
   cluster_version = "1.32"
   subnet_ids      = module.vpc.public_subnets
-  bootstrap_self_managed_addons = true
+  bootstrap_self_managed_addons = false
 
   cluster_upgrade_policy = {
    support_type = "STANDARD"
