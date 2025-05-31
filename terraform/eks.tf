@@ -30,6 +30,7 @@ module "vpc" {
   enable_dns_hostnames = true
   map_public_ip_on_launch = true
 
+
   public_subnet_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                      = "1"
@@ -40,6 +41,7 @@ module "vpc" {
     "kubernetes.io/role/internal-elb"             = "1"
   }
 }
+
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -57,7 +59,7 @@ module "eks" {
   cluster_addons = {
     eks-pod-identity-agent = {}
     kube-proxy             = {}
-    vpc-cni                = {}
+    #vpc-cni                = {}
   }
 
   enable_cluster_creator_admin_permissions = true
