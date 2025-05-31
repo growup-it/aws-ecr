@@ -1,45 +1,5 @@
-
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 4.45.0"
-    }
-  }
-  required_version = ">= 1.4.6"
-}
-provider "aws" {
-  region = "ap-south-1"
-}
-
-terraform {
-  backend "s3" {
-    bucket         = "terraform-state-bucket-4152"
-    key            = "terraform/terraform.tfstate"
-    region         = "ap-south-1"
-  }
-}
-
-data "aws_availability_zones" "available" {}
-
-data "aws_eks_cluster" "cluster" {
-  name       = module.eks.cluster_name
-  depends_on = [module.eks]
-}
-
-data "aws_eks_cluster_auth" "cluster" {
-  name       = module.eks.cluster_name
-  depends_on = [module.eks]
-}
-
 locals {
   cluster_name = "learnk8s"
-}
-
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
 module "eks-kubeconfig" {
@@ -88,7 +48,20 @@ module "eks" {
   cluster_name    = local.cluster_name
   cluster_version = "1.32"
   subnet_ids      = module.vpc.public_subnets
+  bootstrap_self_managed_addons = true
+
+  cluster_upgrade_policy = {
+   support_type = "STANDARD"
+  }
+
+  cluster_addons = {
+    eks-pod-identity-agent = {}
+    kube-proxy             = {}
+    vpc-cni                = {}
+  }
+
   enable_cluster_creator_admin_permissions = true
+  enable_irsa = true
 
   cluster_compute_config = {
     enabled    = true
@@ -96,8 +69,6 @@ module "eks" {
   }
 
   vpc_id = module.vpc.vpc_id
-
-
 
 
   cluster_endpoint_public_access  = true
