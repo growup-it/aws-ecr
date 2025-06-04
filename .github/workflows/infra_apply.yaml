@@ -3,7 +3,7 @@ name: Terraform Apply on Infra Branch
 on:
   push:
     branches:
-      - infra
+      - infra12
 
 env:
   AWS_REGION: "ap-south-1"
