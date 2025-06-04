@@ -25,19 +25,19 @@ resource "aws_iam_group" "admin_group" {
 
 # AWS iam role for EKS admin access
 resource "aws_iam_role" "admin_role" {
-    name = "eks-admin-role"
-    assume_role_policy = jsonencode({
-        Version = "2012-10-17",
-        Statement = [
-            {
-                Effect = "Allow",
-                Principal = {
-                      "AWS": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-                },
-                Action = "sts:AssumeRole"
-            }
-        ]
-    })
+  name = "eks-admin-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
 # Attach AdministratorAccess policy to the IAM Role
@@ -50,7 +50,7 @@ resource "aws_iam_role_policy_attachment" "admin_permissions" {
 resource "aws_iam_policy" "eks_assume_role_policy" {
   name        = "eks-assume-role-policy"
   description = "Allows users in the group to assume the eks-admins-role"
-  policy      = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -70,9 +70,9 @@ resource "aws_iam_group_policy_attachment" "attach_assume_role_policy" {
 
 # Register the IAM Role with EKS for access
 resource "aws_eks_access_entry" "example" {
-  cluster_name      = module.eks.cluster_name
-  principal_arn     = aws_iam_role.admin_role.arn
-  type              = "STANDARD"
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_iam_role.admin_role.arn
+  type          = "STANDARD"
 }
 
 # Associate the IAM Role with EKS Admin Policy
@@ -81,13 +81,13 @@ resource "aws_eks_access_policy_association" "example" {
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   principal_arn = aws_iam_role.admin_role.arn
   access_scope {
-    type       = "cluster"
+    type = "cluster"
   }
 }
 
 # IAM Role and Policy for AWS Load Balancer Controller
 resource "aws_iam_role" "eks-alb-ingress-controller" {
-  name = "eks-alb-ingress-controller"
+  name               = "eks-alb-ingress-controller"
   assume_role_policy = data.aws_iam_policy_document.alb_controller_assume_role_policy.json
 }
 
@@ -97,15 +97,15 @@ resource "aws_iam_role_policy_attachment" "alb_controller_policy_attachment" {
   policy_arn = aws_iam_policy.alb_controller_policy.arn
 
   depends_on = [
-     aws_iam_policy.alb_controller_policy
-     ]
+    aws_iam_policy.alb_controller_policy
+  ]
 }
 
 # Define the IAM policy document for the AssumeRole policy
 data "aws_iam_policy_document" "alb_controller_assume_role_policy" {
   statement {
-    actions   = ["sts:AssumeRoleWithWebIdentity"]
-    effect    = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
     principals {
       type        = "Federated"
       identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${module.eks.oidc_provider}"]
