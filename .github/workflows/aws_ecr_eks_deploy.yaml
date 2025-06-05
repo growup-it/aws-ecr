@@ -11,6 +11,7 @@ env:
   AWS_REGION: "ap-south-1"
   EKS_CLUSTER_NAME: learnk8s  # Change this to your EKS cluster name
   ECR_REPOSITORY: 087843402575.dkr.ecr.ap-south-1.amazonaws.com
+  
 
 jobs:
   build:
